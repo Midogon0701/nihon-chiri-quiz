@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>都道府県・県庁所在地クイズ</title>
+<style>
+:root{--ink:#17324d;--muted:#6b7c8d;--paper:#fff;--bg:#f4f7fb;--accent:#ff7a59;--accent2:#2f80ed;--ok:#18864b;--ng:#d64545}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{width:min(980px,100%);margin:auto;padding:18px 14px 70px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.brand{font-weight:900;font-size:clamp(18px,5vw,30px)} .brand small{display:block;font-size:11px;letter-spacing:.16em;color:var(--muted)}
+.card{background:#fff;border-radius:22px;box-shadow:0 8px 30px #17324d12;border:1px solid #e7edf4}
+.hero{padding:18px}.eyebrow{font-weight:800;letter-spacing:.14em;color:var(--accent2);font-size:12px}
+h1{font-size:clamp(28px,8vw,54px);line-height:1.05;margin:6px 0 8px}.lead{margin:0;color:var(--muted);font-weight:650}
+.mapCard{margin-top:14px;padding:12px;position:relative;overflow:hidden}
+#map{height:min(57vh,560px);min-height:330px;display:flex;align-items:center;justify-content:center}
+#map svg{width:100%;height:100%;display:block}
+#map .prefecture{fill:#e8edf3!important;stroke:#fff!important;stroke-width:1.3!important;transition:fill .2s,filter .2s}
+#map .prefecture.target{fill:#ff7a59!important;filter:drop-shadow(0 2px 2px #0003)}
+#map .prefecture.target rect{fill:#ff7a59!important} #map .prefecture rect{fill:#e8edf3;stroke:white;stroke-width:2}
+#map .boundary-line{stroke:#b8c3ce!important}#map{position:relative}
+.geoOverlay{position:absolute;inset:0;pointer-events:none}.geoMarker{position:absolute;transform:translate(-50%,-50%)}
+.geoMarker.river{width:72px;height:8px;border-radius:20px;background:#2f80ed;transform:translate(-50%,-50%) rotate(var(--rot));box-shadow:0 0 0 2px white}
+.geoMarker.mountain{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:26px solid #d64545;filter:drop-shadow(0 1px 2px white)}
+.geoMarker.lake{width:30px;height:19px;border-radius:50%;background:#2f80ed;border:3px solid white}
+.geoLabel{position:absolute;transform:translate(-50%,15px);font-size:12px;font-weight:900;background:white;padding:2px 7px;border-radius:8px;box-shadow:0 1px 5px #0003}
+.mapmsg{font-weight:800;text-align:center;color:var(--muted);padding:30px}
+.controls{padding:16px;margin-top:14px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tabs .tab{font-size:13px;padding:11px 5px}
+button,select,input{font:inherit}button{border:0;border-radius:14px;padding:13px 14px;font-weight:850;cursor:pointer}
+.tab{background:#edf2f7;color:var(--ink)}.tab.on{background:var(--ink);color:white}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.row label{font-size:13px;font-weight:800;color:var(--muted)}
+select{border:1px solid #d7e0e9;border-radius:12px;padding:10px;background:white;color:var(--ink)}
+.status{display:flex;justify-content:space-between;margin:16px 2px 8px;font-weight:800;color:var(--muted)}
+.question{font-size:clamp(22px,6vw,34px);font-weight:950;margin:8px 0}.hint{font-size:13px;color:var(--muted);margin-bottom:12px}
+.answerRow{display:grid;grid-template-columns:1fr auto;gap:8px}
+input{min-width:0;border:2px solid #dce5ee;border-radius:14px;padding:14px;font-size:16px;outline:none}input:focus{border-color:var(--accent2)}
+.primary{background:var(--accent2);color:#fff}.secondary{background:#edf2f7;color:var(--ink)}.next{background:var(--ink);color:white;width:100%;margin-top:10px}
+.feedback{min-height:28px;margin:10px 2px 0;font-weight:900}
+.learnCard{margin-top:12px;padding:14px;border-radius:16px;background:#fff8e8;border:2px solid #ffd77a;line-height:1.65}
+.learnTitle{font-weight:950;font-size:18px;margin-bottom:4px}.studyHint{margin:8px 0 12px;padding:9px 12px;border-radius:12px;background:#eef6ff;color:#24527a;font-weight:800;font-size:13px}
+.currentArrow{position:absolute;height:10px;border-radius:99px;transform-origin:left center;box-shadow:0 0 0 2px white}
+.currentArrow.warm{background:#ef5350}.currentArrow.cold{background:#3182ce}
+.currentArrow:after{content:"";position:absolute;right:-10px;top:-6px;border-left:15px solid currentColor;border-top:11px solid transparent;border-bottom:11px solid transparent}
+.currentArrow.warm{color:#ef5350}.currentArrow.cold{color:#3182ce}.feedback.ok{color:var(--ok)}.feedback.ng{color:var(--ng)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.progress{height:8px;background:#e7edf4;border-radius:99px;overflow:hidden;margin-top:12px}.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.result{display:none;padding:22px;margin-top:14px;text-align:center}.result .big{font-size:44px;font-weight:950}
+.history{padding:18px;margin-top:14px}.history h2{margin:0 0 8px}.historyList{display:grid;gap:8px}.hist{display:flex;justify-content:space-between;background:#f6f8fb;padding:10px 12px;border-radius:12px;font-size:13px;font-weight:750}
+footer{text-align:center;color:var(--muted);font-size:11px;margin-top:18px;line-height:1.6}
+@media(max-width:560px){.wrap{padding:10px 9px 50px}.hero{padding:15px}.mapCard{padding:6px}#map{min-height:360px;height:52vh}.controls{padding:14px}.answerRow{grid-template-columns:1fr}.actions{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand"><small>47 PREFECTURES</small>日本地図クイズ</div><button class="secondary" id="scrollHistory">学習きろく</button></header>
+<section class="card hero"><div class="eyebrow">地図から、覚えよう。</div><h1>日本を<br>マスター</h1><p class="lead">色のついた都道府県を答えて、県庁所在地まで覚えよう。</p></section>
+
+<section class="card mapCard"><div id="map"><div class="mapmsg">日本地図を読み込み中…</div></div></section>
+
+<section class="card controls" id="quiz">
+<div class="tabs">
+<button class="tab on" data-mode="pref">都道府県</button><button class="tab" data-mode="capital">県庁所在地</button>
+<button class="tab" data-mode="region">地方</button><button class="tab" data-mode="river">川</button>
+<button class="tab" data-mode="mountain">山・山脈</button><button class="tab" data-mode="lake">湖</button><button class="tab" data-mode="current">海流</button></div>
+<div class="row"><label>出題数</label><select id="count"><option>10</option><option>20</option><option value="47">47</option></select></div>
+<div class="status"><span id="qnum">第1問 / 10問</span><span id="score">正解 0</span></div>
+<div class="progress"><i id="bar"></i></div>
+<div class="question" id="question">色のついた都道府県は？</div>
+<div class="hint">漢字・ひらがな・カタカナで答えられます。</div>
+<div class="studyHint" id="studyHint">地図の位置も一緒に覚えよう！</div>
+<div class="answerRow"><input id="answer" autocomplete="off" enterkeyhint="done" placeholder="答えを入力"><button class="primary" id="check">答え合わせ</button></div>
+<div class="feedback" id="feedback"></div>
+<div id="learnCard" class="learnCard" hidden><div class="learnTitle">📚 覚えよう！</div><div id="learnText"></div></div>
+<div class="actions"><button class="secondary" id="reveal">わからない・答えを見る</button><button class="secondary" id="restart">最初から</button></div>
+<button class="next" id="next" hidden>次の問題</button>
+</section>
+
+<section class="card result" id="result"><div>よくがんばりました！</div><div class="big" id="finalScore">0 / 10</div><div class="actions"><button class="primary" id="again">もう一度チャレンジ</button><button class="secondary" id="review">今回の間違いを復習</button></div></section>
+
+<section class="card history" id="history"><div class="eyebrow">MY PRACTICE</div><h2>学習きろく</h2><div id="historyList" class="historyList"></div><div class="row"><button class="secondary" id="clearHistory">きろくを消す</button></div></section>
+<footer>学習用クイズです。学習記録はこのブラウザ内（localStorage）に保存されます。<br>地図：オンライン時はGeolonia「japanese-prefectures」(GFDL)。オフライン時は地方別の簡易配置図を表示します。一部の離島は元地図の仕様により省略されています。<br>川・山・山脈・湖・海流の位置表示は学習用の概略図です。海流は実際には季節や時期により流路が変動します。</footer>
+</div>
+<script>
+const DATA=[
+["01","北海道","札幌市"],["02","青森県","青森市"],["03","岩手県","盛岡市"],["04","宮城県","仙台市"],["05","秋田県","秋田市"],["06","山形県","山形市"],["07","福島県","福島市"],["08","茨城県","水戸市"],["09","栃木県","宇都宮市"],["10","群馬県","前橋市"],["11","埼玉県","さいたま市"],["12","千葉県","千葉市"],["13","東京都","新宿区"],["14","神奈川県","横浜市"],["15","新潟県","新潟市"],["16","富山県","富山市"],["17","石川県","金沢市"],["18","福井県","福井市"],["19","山梨県","甲府市"],["20","長野県","長野市"],["21","岐阜県","岐阜市"],["22","静岡県","静岡市"],["23","愛知県","名古屋市"],["24","三重県","津市"],["25","滋賀県","大津市"],["26","京都府","京都市"],["27","大阪府","大阪市"],["28","兵庫県","神戸市"],["29","奈良県","奈良市"],["30","和歌山県","和歌山市"],["31","鳥取県","鳥取市"],["32","島根県","松江市"],["33","岡山県","岡山市"],["34","広島県","広島市"],["35","山口県","山口市"],["36","徳島県","徳島市"],["37","香川県","高松市"],["38","愛媛県","松山市"],["39","高知県","高知市"],["40","福岡県","福岡市"],["41","佐賀県","佐賀市"],["42","長崎県","長崎市"],["43","熊本県","熊本市"],["44","大分県","大分市"],["45","宮崎県","宮崎市"],["46","鹿児島県","鹿児島市"],["47","沖縄県","那覇市"]
+];
+
+const REGIONS=[
+{name:"北海道地方",codes:["01"]},{name:"東北地方",codes:["02","03","04","05","06","07"]},
+{name:"関東地方",codes:["08","09","10","11","12","13","14"]},{name:"中部地方",codes:["15","16","17","18","19","20","21","22","23"]},
+{name:"近畿地方",codes:["24","25","26","27","28","29","30"]},{name:"中国地方",codes:["31","32","33","34","35"]},
+{name:"四国地方",codes:["36","37","38","39"]},{name:"九州地方",codes:["40","41","42","43","44","45","46","47"]}];
+const GEO={
+river:[["石狩川",79,13,15],["北上川",76,35,75],["最上川",70,38,-20],["利根川",68,52,8],["信濃川",57,48,68],["木曽川",52,59,70],["淀川",43,65,-15],["吉野川",37,73,-8],["筑後川",19,73,5]],
+mountain:[["富士山",61,61],["北岳",58.3,60.5],["奥穂高岳",55.2,55.4],["間ノ岳",58.0,59.4],["浅間山",60,53],["阿蘇山",18,78],["桜島",16,87],["奥羽山脈",73,37],["飛騨山脈（北アルプス）",55,55],["木曽山脈（中央アルプス）",54,60],["赤石山脈（南アルプス）",57,62],["中国山地",31,66],["四国山地",34,75]],
+lake:[["琵琶湖",45,63],["霞ヶ浦",69,55],["サロマ湖",88,12],["猪苗代湖",69,43],["十和田湖",72,29],["宍道湖",31,62],["浜名湖",57,65]]
+};
+
+
+const LEARN={
+"富士山":"標高3,776m。日本で最も高い山。山梨県と静岡県にまたがる。",
+"北岳":"標高3,193m。日本で2番目に高い山。山梨県にある。",
+"奥穂高岳":"標高3,190m。日本で3番目の高さ（間ノ岳と同標高）。飛騨山脈（北アルプス）にある。",
+"間ノ岳":"標高3,190m。日本で3番目の高さ（奥穂高岳と同標高）。赤石山脈（南アルプス）にある。",
+"浅間山":"群馬県と長野県の境にある活火山。",
+"阿蘇山":"熊本県にある火山。大きなカルデラで知られる。",
+"桜島":"鹿児島県にある活火山。鹿児島湾に位置する。",
+"奥羽山脈":"東北地方を南北にのびる山脈。",
+"飛騨山脈（北アルプス）":"中部地方にある日本アルプスの一つ。北アルプスとも呼ばれる。",
+"木曽山脈（中央アルプス）":"日本アルプスの一つ。中央アルプスとも呼ばれる。",
+"赤石山脈（南アルプス）":"日本アルプスの一つ。南アルプスとも呼ばれる。",
+"中国山地":"中国地方を東西にのびる山地。",
+"四国山地":"四国の中央部を東西にのびる山地。",
+"信濃川":"日本で最も長い川。長野県では千曲川と呼ばれ、新潟県で日本海へ注ぐ。",
+"利根川":"流域面積が日本最大の川。関東地方を流れる。",
+"石狩川":"北海道を代表する川の一つ。石狩平野を流れる。",
+"北上川":"東北地方を流れる代表的な川。岩手県から宮城県へ流れる。",
+"最上川":"山形県を流れ、日本海へ注ぐ。",
+"木曽川":"木曽三川の一つ。濃尾平野を流れる。",
+"淀川":"琵琶湖から流れ出し、大阪湾へ注ぐ。",
+"吉野川":"四国を代表する川の一つ。",
+"筑後川":"九州を代表する川の一つ。有明海へ注ぐ。",
+"琵琶湖":"滋賀県にある日本最大の湖。",
+"霞ヶ浦":"茨城県にある、日本で2番目に大きい湖。",
+"サロマ湖":"北海道にある、日本で3番目に大きい湖。",
+"猪苗代湖":"福島県にある湖。磐梯山の南側に位置する。",
+"十和田湖":"青森県と秋田県にまたがるカルデラ湖。",
+"宍道湖":"島根県にある湖。しじみで知られる。",
+"浜名湖":"静岡県にある汽水湖。",
+"黒潮（日本海流）":"暖流。日本の南から太平洋側を北東方向へ流れる。日本海流とも呼ばれる。",
+"親潮（千島海流）":"寒流。北海道・東北の太平洋側へ南下する。千島海流とも呼ばれる。",
+"対馬暖流":"暖流。対馬海峡から日本海へ入り、日本列島の日本海側を北上する。",
+"リマン寒流":"寒流。ユーラシア大陸側に沿って日本海を南下する。"
+};
+const CURRENTS=[
+["黒潮（日本海流）","warm",[[18,88],[30,82],[43,77],[57,71],[70,63],[80,56]]],
+["親潮（千島海流）","cold",[[91,17],[87,25],[84,34],[82,43]]],
+["対馬暖流","warm",[[20,77],[26,68],[34,58],[43,48]]],
+["リマン寒流","cold",[[45,24],[39,33],[34,42],[30,52]]]
+];
+const kanaMap={"北海道":"ほっかいどう","青森県":"あおもりけん","岩手県":"いわてけん","宮城県":"みやぎけん","秋田県":"あきたけん","山形県":"やまがたけん","福島県":"ふくしまけん","茨城県":"いばらきけん","栃木県":"とちぎけん","群馬県":"ぐんまけん","埼玉県":"さいたまけん","千葉県":"ちばけん","東京都":"とうきょうと","神奈川県":"かながわけん","新潟県":"にいがたけん","富山県":"とやまけん","石川県":"いしかわけん","福井県":"ふくいけん","山梨県":"やまなしけん","長野県":"ながのけん","岐阜県":"ぎふけん","静岡県":"しずおかけん","愛知県":"あいちけん","三重県":"みえけん","滋賀県":"しがけん","京都府":"きょうとふ","大阪府":"おおさかふ","兵庫県":"ひょうごけん","奈良県":"ならけん","和歌山県":"わかやまけん","鳥取県":"とっとりけん","島根県":"しまねけん","岡山県":"おかやまけん","広島県":"ひろしまけん","山口県":"やまぐちけん","徳島県":"とくしまけん","香川県":"かがわけん","愛媛県":"えひめけん","高知県":"こうちけん","福岡県":"ふくおかけん","佐賀県":"さがけん","長崎県":"ながさきけん","熊本県":"くまもとけん","大分県":"おおいたけん","宮崎県":"みやざきけん","鹿児島県":"かごしまけん","沖縄県":"おきなわけん"};
+const capitalsKana={"札幌市":"さっぽろし","青森市":"あおもりし","盛岡市":"もりおかし","仙台市":"せんだいし","秋田市":"あきたし","山形市":"やまがたし","福島市":"ふくしまし","水戸市":"みとし","宇都宮市":"うつのみやし","前橋市":"まえばしし","さいたま市":"さいたまし","千葉市":"ちばし","新宿区":"しんじゅくく","横浜市":"よこはまし","新潟市":"にいがたし","富山市":"とやまし","金沢市":"かなざわし","福井市":"ふくいし","甲府市":"こうふし","長野市":"ながのし","岐阜市":"ぎふし","静岡市":"しずおかし","名古屋市":"なごやし","津市":"つし","大津市":"おおつし","京都市":"きょうとし","大阪市":"おおさかし","神戸市":"こうべし","奈良市":"ならし","和歌山市":"わかやまし","鳥取市":"とっとりし","松江市":"まつえし","岡山市":"おかやまし","広島市":"ひろしまし","山口市":"やまぐちし","徳島市":"とくしまし","高松市":"たかまつし","松山市":"まつやまし","高知市":"こうちし","福岡市":"ふくおかし","佐賀市":"さがし","長崎市":"ながさきし","熊本市":"くまもとし","大分市":"おおいたし","宮崎市":"みやざきし","鹿児島市":"かごしまし","那覇市":"なはし"};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let mode="pref", questions=[], idx=0, correct=0, answered=false, mistakes=[], mapReady=false, hadWrong=false;
+
+function kataToHira(s){return s.replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}
+function norm(s){return kataToHira((s||"").trim().replace(/\s/g,"").replace(/[都道府県市区]$/,""))}
+function accepted(item){
+ let ans=mode==="capital"?item[2]:item[1];
+ if(!["pref","capital"].includes(mode)){let a=[ans,ans.replace(/地方$/,""),ans.replace(/（.*?）/g,"")];
+ if(ans.includes("黒潮"))a.push("黒潮","日本海流");if(ans.includes("親潮"))a.push("親潮","千島海流");if(ans.includes("飛騨山脈"))a.push("北アルプス");if(ans.includes("木曽山脈"))a.push("中央アルプス");if(ans.includes("赤石山脈"))a.push("南アルプス");return a.map(norm)}
+ let k=mode==="pref"?kanaMap[ans]:capitalsKana[ans],arr=[ans,k];if(item[1]==="東京都"&&mode==="capital")arr.push("東京","とうきょう","東京都","とうきょうと");return arr.map(norm);
+}
+function shuffle(a){a=[...a];for(let i=a.length-1;i;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function highlight(code){
+ $$("#map .prefecture").forEach(x=>x.classList.remove("target"));
+ let el=$(`#map .prefecture[data-code="${code}"]`);
+ if(el) el.classList.add("target");
+}
+
+function clearGeo(){document.querySelector(".geoOverlay")?.remove()}
+function showMarker(a,type){clearGeo();let o=document.createElement("div");o.className="geoOverlay";let m=document.createElement("div");m.className="geoMarker "+type;m.style.left=a[1]+"%";m.style.top=a[2]+"%";if(type==="river")m.style.setProperty("--rot",(a[3]||0)+"deg");o.appendChild(m);let l=document.createElement("div");l.className="geoLabel";l.style.left=a[1]+"%";l.style.top=a[2]+"%";l.textContent="ここ";o.appendChild(l);$("#map").appendChild(o)}
+function showCurrent(a){
+ clearGeo();$$("#map .prefecture").forEach(x=>x.classList.remove("target"));
+ let o=document.createElement("div");o.className="geoOverlay";
+ let pts=a[2];
+ for(let i=0;i<pts.length-1;i++){
+  let [x1,y1]=pts[i],[x2,y2]=pts[i+1],dx=x2-x1,dy=y2-y1;
+  let d=Math.sqrt(dx*dx+dy*dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+  let q=document.createElement("div");q.className="currentArrow "+a[1];q.style.left=x1+"%";q.style.top=y1+"%";q.style.width=(d*0.92)+"%";q.style.transform=`rotate(${ang}deg)`;o.appendChild(q);
+ }
+ $("#map").appendChild(o);
+}
+function regionMark(codes){clearGeo();$$("#map .prefecture").forEach(x=>x.classList.remove("target"));codes.forEach(c=>{let e=$(`#map .prefecture[data-code="${c}"]`);if(e)e.classList.add("target")})}
+function pool(){if(mode==="region")return REGIONS.map((r,i)=>["R"+i,r.name,r.codes]);if(mode==="current")return CURRENTS.map((a,i)=>["C"+i,a[0],a]);if(GEO[mode])return GEO[mode].map((a,i)=>["G"+i,a[0],a]);return DATA}
+
+function start(custom){
+ let n=+$("#count").value;
+ let p=pool(); questions=custom?.length?custom:shuffle(p).slice(0,Math.min(n,p.length));
+ idx=0;correct=0;mistakes=[];answered=false;hadWrong=false;
+ $("#result").style.display="none";$("#quiz").style.display="block";render();
+}
+function render(){
+ let item=questions[idx]; if(!item){finish();return}
+ if(mode==="region")regionMark(item[2]);else if(mode==="current")showCurrent(item[2]);else if(GEO[mode]){$$("#map .prefecture").forEach(x=>x.classList.remove("target"));showMarker(item[2],mode)}else{clearGeo();highlight(item[0])} answered=false;hadWrong=false;$("#answer").value="";$("#answer").disabled=false;$("#check").disabled=false;
+ $("#feedback").textContent="";$("#feedback").className="feedback";$("#next").hidden=true;$("#learnCard").hidden=true;
+let st="地図の位置も一緒に覚えよう！";
+if(mode==="mountain"&&item[1]==="富士山")st="ヒント：日本で1番高い山";
+if(mode==="mountain"&&item[1]==="北岳")st="ヒント：日本で2番目に高い山";
+if(mode==="mountain"&&(item[1]==="奥穂高岳"||item[1]==="間ノ岳"))st="ヒント：日本で3番目の高さ（同標高）";
+if(mode==="current")st="ヒント：赤＝暖流、青＝寒流。流れる向きにも注目！";
+$("#studyHint").textContent=st;
+ $("#qnum").textContent=`第${idx+1}問 / ${questions.length}問`;$("#score").textContent=`正解 ${correct}`;
+ $("#bar").style.width=`${idx/questions.length*100}%`;
+ $("#question").textContent=mode==="pref"?"色のついた都道府県は？":mode==="capital"?`${item[1]}の県庁所在地は？`:mode==="region"?"色のついた地方は？":mode==="river"?"地図の「ここ」にある川は？":mode==="mountain"?"地図の「ここ」にある山・山脈は？":mode==="lake"?"地図の「ここ」にある湖は？":"矢印で示された海流は？";
+ // 入力欄への自動フォーカスはスマホでキーボードが地図を隠すため省略
+}
+function check(){
+ if(answered)return; let v=norm($("#answer").value); if(!v)return;
+ let item=questions[idx], ok=accepted(item).includes(v); answered=true;
+ if(ok){correct++;$("#feedback").textContent="〇 正解！";$("#feedback").className="feedback ok"}
+ else{mistakes.push(item);$("#feedback").textContent=`× ちがいます。答え：${mode==="capital"?item[2]:item[1]}`;$("#feedback").className="feedback ng"}
+ lock();
+}
+function reveal(){
+ if(answered)return;let item=questions[idx];answered=true;mistakes.push(item);
+ $("#feedback").textContent=`答え：${mode==="capital"?item[2]:item[1]}`;$("#feedback").className="feedback ng";lock();
+}
+function lock(){let it=questions[idx];let txt=LEARN[it?.[1]];if(txt){$("#learnText").innerHTML=`<b>${it[1]}</b><br>${txt}`;$("#learnCard").hidden=false}$("#answer").disabled=true;$("#check").disabled=true;$("#next").hidden=false;$("#score").textContent=`正解 ${correct}`}
+function finish(){
+ $("#quiz").style.display="none";$("#result").style.display="block";$("#finalScore").textContent=`${correct} / ${questions.length}`;
+ $("#bar").style.width="100%";saveHistory();renderHistory();window.scrollTo({top:$("#result").offsetTop-12,behavior:"smooth"});
+}
+function saveHistory(){
+ let h=JSON.parse(localStorage.getItem("jpQuizHistory")||"[]");
+ h.unshift({date:new Date().toLocaleString("ja-JP"),mode,count:questions.length,score:correct});
+ localStorage.setItem("jpQuizHistory",JSON.stringify(h.slice(0,30)));
+ localStorage.setItem("jpQuizMistakes",JSON.stringify(mistakes.map(x=>x[0])));
+}
+function renderHistory(){
+ let h=JSON.parse(localStorage.getItem("jpQuizHistory")||"[]");
+ $("#historyList").innerHTML=h.length?h.map(x=>`<div class="hist"><span>${x.date}・${({pref:"都道府県",capital:"県庁所在地",region:"地方",river:"川",mountain:"山・山脈",lake:"湖",current:"海流"}[x.mode]||x.mode)}</span><b>${x.score}/${x.count}</b></div>`).join(""):`<div class="hist"><span>まだ記録がありません。まずは10問やってみよう！</span></div>`;
+}
+function fallbackMap(){
+ // 地理的位置を学ぶための簡易配置。都道府県の輪郭を再現するものではありません。
+ const groups=[
+ ["01"], ["02","05","03","06","04","07"],
+ ["15","16","17","18","20","19","21","22","23"],
+ ["10","09","08","11","13","12","14"],
+ ["26","25","24","28","27","29","30"],
+ ["32","31","35","34","33"], ["37","36","38","39"],
+ ["42","41","40","44","43","45","46","47"]];
+ const positions={};
+ const origin=[[72,5],[69,20],[47,38],[72,43],[43,55],[24,58],[35,72],[12,78]];
+ groups.forEach((g,k)=>g.forEach((code,i)=>{let cols=k===1?2:k===7?3:3;let [x,y]=origin[k];positions[code]=[x+(i%cols)*7,y+Math.floor(i/cols)*5.8]}));
+ let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="日本の都道府県の簡易配置図"><text x="30" y="40" fill="#5b6d7d" font-size="24">オフライン簡易地図（位置はおおよそ）</text>';
+ for(const [code,name] of DATA){let [x,y]=positions[code];svg+=`<g class="prefecture" data-code="${code}"><rect x="${x*10}" y="${y*10}" width="68" height="53" rx="9"/><text x="${x*10+34}" y="${y*10+32}" font-size="15" text-anchor="middle" fill="#17324d" stroke="none">${name.replace(/[都道府県]$/,'')}</text></g>`}
+ svg+='</svg>';$("#map").innerHTML=svg;mapReady=true;render();
+}
+async function loadMap(){
+ const urls=["https://geolonia.github.io/japanese-prefectures/map-full.svg","https://cdn.jsdelivr.net/gh/geolonia/japanese-prefectures@master/map-full.svg"];
+ fallbackMap();
+ for(const url of urls){
+  try{
+   const r=await fetch(url,{mode:"cors"});if(!r.ok)throw 0;const t=await r.text();
+   if(!t.includes("<svg"))throw 0;$("#map").innerHTML=t;mapReady=true;render();return;
+  }catch(e){}
+ }
+ fallbackMap();
+}
+$$(".tab").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$(".tab").forEach(x=>x.classList.toggle("on",x===b));start()});
+$("#count").onchange=()=>start();$("#check").onclick=check;$("#answer").onkeydown=e=>{if(e.key==="Enter"){answered?$("#next").click():check()}};
+$("#reveal").onclick=reveal;$("#next").onclick=()=>{idx++;render()};$("#restart").onclick=()=>start();
+$("#again").onclick=()=>start();$("#review").onclick=()=>mistakes.length?start([...mistakes]):alert("今回、間違えた問題はありません！");
+$("#clearHistory").onclick=()=>{if(confirm("学習きろくを消しますか？")){localStorage.removeItem("jpQuizHistory");localStorage.removeItem("jpQuizMistakes");renderHistory()}};
+$("#scrollHistory").onclick=()=>$("#history").scrollIntoView({behavior:"smooth"});
+start();renderHistory();loadMap();
+</script>
+</body></html>
